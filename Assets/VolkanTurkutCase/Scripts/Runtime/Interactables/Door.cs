@@ -100,63 +100,89 @@ namespace VolkanTurkutCase.Runtime.Interactables
 
         #endregion
 
+        #region Fields - Runtime
+
+        private bool m_ShowingLockedMessage;
+        private Coroutine m_LockedMessageCoroutine;
+
+        #endregion
+
         #region InteractableBase Implementation
 
         /// <inheritdoc/>
         public override bool CanInteract()
         {
-            if (!m_IsLocked)
-            {
-                return true;
-            }
-
-            if (m_RequiredKey == null)
-            {
-                return true;
-            }
-
-            var inventory = PlayerInventory.Instance;
-            if (inventory == null)
-            {
-                Debug.LogError("[Door] PlayerInventory not found!");
-                return false;
-            }
-
-            bool hasKey = inventory.HasKey(m_RequiredKey);
-
-            // Play locked sound when trying without key
-            if (!hasKey)
-            {
-                PlaySound(m_LockedSound);
-            }
-
-            return hasKey;
+            // Always allow interaction attempt - we show "locked" message in ExecuteInteraction
+            return true;
         }
 
         /// <inheritdoc/>
         protected override void ExecuteInteraction()
         {
+            // Check if door is locked
             if (m_IsLocked && m_RequiredKey != null)
             {
+                var inventory = PlayerInventory.Instance;
+                if (inventory == null)
+                {
+                    ShowLockedFeedback();
+                    return;
+                }
+
+                // Check if holding the correct key
+                KeyData selectedKey = inventory.SelectedKey;
+                bool isHoldingCorrectKey = selectedKey != null && selectedKey.KeyId == m_RequiredKey.KeyId;
+
+                if (!isHoldingCorrectKey)
+                {
+                    // Show locked feedback
+                    ShowLockedFeedback();
+                    return;
+                }
+
+                // Has correct key - unlock
                 Unlock();
             }
 
             ToggleDoor();
         }
 
+        /// <summary>
+        /// Shows feedback when door is locked.
+        /// </summary>
+        private void ShowLockedFeedback()
+        {
+            PlaySound(m_LockedSound);
+
+            // Show locked message temporarily
+            if (m_LockedMessageCoroutine != null)
+            {
+                StopCoroutine(m_LockedMessageCoroutine);
+            }
+            m_LockedMessageCoroutine = StartCoroutine(ShowLockedMessageCoroutine());
+        }
+
+        /// <summary>
+        /// Coroutine to show locked message temporarily.
+        /// </summary>
+        private System.Collections.IEnumerator ShowLockedMessageCoroutine()
+        {
+            m_ShowingLockedMessage = true;
+            yield return new WaitForSeconds(2f);
+            m_ShowingLockedMessage = false;
+            m_LockedMessageCoroutine = null;
+        }
+
         /// <inheritdoc/>
         public override string GetPromptMessage()
         {
-            if (m_IsLocked && m_RequiredKey != null)
+            // Show locked message temporarily after trying without key
+            if (m_ShowingLockedMessage)
             {
-                var inventory = PlayerInventory.Instance;
-                if (inventory == null || !inventory.HasKey(m_RequiredKey))
-                {
-                    return m_LockedMessage;
-                }
-                return $"Press E to Unlock with {m_RequiredKey.ItemName}";
+                return m_LockedMessage;
             }
 
+            // Normal open/close message
             return m_IsOpen ? m_CloseMessage : m_OpenMessage;
         }
 

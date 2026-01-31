@@ -61,9 +61,40 @@ namespace VolkanTurkutCase.Runtime.Interactables
                 m_VisualObject = gameObject;
             }
 
+            // Note: KeyData may be null if this is a held item visual (gets destroyed quickly)
+            // Only warn if this is a scene object (not recently instantiated as clone)
+        }
+
+        private void Start()
+        {
+            // Apply color on start so keys in scene have correct color
+            ApplyKeyColor();
+        }
+
+        /// <summary>
+        /// Applies the key color to the visual.
+        /// </summary>
+        public void ApplyKeyColor()
+        {
             if (m_KeyData == null)
             {
-                Debug.LogError($"[KeyPickup] KeyData is not assigned on {gameObject.name}!");
+                return;
+            }
+
+            var renderer = GetComponentInChildren<MeshRenderer>();
+            if (renderer != null)
+            {
+                // Create a new material instance with the key color
+                Material mat = new Material(renderer.sharedMaterial);
+                mat.color = m_KeyData.KeyColor;
+
+                // Also set _BaseColor for URP compatibility
+                if (mat.HasProperty("_BaseColor"))
+                {
+                    mat.SetColor("_BaseColor", m_KeyData.KeyColor);
+                }
+
+                renderer.material = mat;
             }
         }
 

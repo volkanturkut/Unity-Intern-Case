@@ -7,7 +7,7 @@ using VolkanTurkutCase.Runtime.Core;
 namespace VolkanTurkutCase.Runtime.Player
 {
     /// <summary>
-    /// Enhanced inventory system with hotbar selection and key dropping.
+    /// Enhanced inventory system with fixed hotbar slots and key dropping.
     /// </summary>
     public class PlayerInventory : MonoBehaviour
     {
@@ -22,51 +22,29 @@ namespace VolkanTurkutCase.Runtime.Player
 
         [Header("Drop Settings")]
         [SerializeField] private float m_DropDistance = 2f;
-        [SerializeField] private float m_DropHeight = 0.5f;
 
         [Header("Key Prefabs")]
         [Tooltip("Prefab to spawn when dropping keys")]
         [SerializeField] private GameObject m_KeyPickupPrefab;
 
-        private List<KeyData> m_CollectedKeys = new List<KeyData>();
+        // Fixed array - slots are fixed positions, can be null (empty)
+        private KeyData[] m_Slots;
         private int m_SelectedSlot = 0;
 
         #endregion
 
         #region Events
 
-        /// <summary>
-        /// Invoked when a key is added to the inventory.
-        /// </summary>
         public event Action<KeyData> OnKeyAdded;
-
-        /// <summary>
-        /// Invoked when a key is removed from the inventory.
-        /// </summary>
         public event Action<KeyData> OnKeyRemoved;
-
-        /// <summary>
-        /// Invoked when the inventory changes.
-        /// </summary>
         public event Action OnInventoryChanged;
-
-        /// <summary>
-        /// Invoked when the selected slot changes.
-        /// </summary>
         public event Action<int> OnSlotSelected;
-
-        /// <summary>
-        /// Invoked when a key is dropped.
-        /// </summary>
         public event Action<KeyData, Vector3> OnKeyDropped;
 
         #endregion
 
         #region Properties
 
-        /// <summary>
-        /// Gets the singleton instance of the player inventory.
-        /// </summary>
         public static PlayerInventory Instance
         {
             get
@@ -83,24 +61,13 @@ namespace VolkanTurkutCase.Runtime.Player
             }
         }
 
-        /// <summary>
-        /// Gets a read-only list of collected keys.
-        /// </summary>
-        public IReadOnlyList<KeyData> CollectedKeys => m_CollectedKeys;
-
-        /// <summary>
-        /// Gets the currently selected slot index.
-        /// </summary>
         public int SelectedSlot => m_SelectedSlot;
 
         /// <summary>
-        /// Gets the key in the selected slot, if any.
+        /// Gets the key in the selected slot (null if empty).
         /// </summary>
-        public KeyData SelectedKey => m_SelectedSlot < m_CollectedKeys.Count ? m_CollectedKeys[m_SelectedSlot] : null;
+        public KeyData SelectedKey => m_Slots != null && m_SelectedSlot < m_Slots.Length ? m_Slots[m_SelectedSlot] : null;
 
-        /// <summary>
-        /// Gets the maximum number of hotbar slots.
-        /// </summary>
         public int MaxSlots => m_MaxSlots;
 
         #endregion
@@ -116,6 +83,9 @@ namespace VolkanTurkutCase.Runtime.Player
                 return;
             }
             s_Instance = this;
+
+            // Initialize fixed slots array
+            m_Slots = new KeyData[m_MaxSlots];
         }
 
         private void Update()
@@ -134,36 +104,18 @@ namespace VolkanTurkutCase.Runtime.Player
 
         #endregion
 
-        #region Methods
+        #region Input Handling
 
-        /// <summary>
-        /// Handles keyboard input for slot selection (1-4 keys).
-        /// </summary>
         private void HandleHotbarInput()
         {
             if (Keyboard.current == null) return;
 
-            if (Keyboard.current.digit1Key.wasPressedThisFrame)
-            {
-                SelectSlot(0);
-            }
-            else if (Keyboard.current.digit2Key.wasPressedThisFrame)
-            {
-                SelectSlot(1);
-            }
-            else if (Keyboard.current.digit3Key.wasPressedThisFrame)
-            {
-                SelectSlot(2);
-            }
-            else if (Keyboard.current.digit4Key.wasPressedThisFrame)
-            {
-                SelectSlot(3);
-            }
+            if (Keyboard.current.digit1Key.wasPressedThisFrame) SelectSlot(0);
+            else if (Keyboard.current.digit2Key.wasPressedThisFrame) SelectSlot(1);
+            else if (Keyboard.current.digit3Key.wasPressedThisFrame) SelectSlot(2);
+            else if (Keyboard.current.digit4Key.wasPressedThisFrame) SelectSlot(3);
         }
 
-        /// <summary>
-        /// Handles drop input (Q key).
-        /// </summary>
         private void HandleDropInput()
         {
             if (Keyboard.current == null) return;
@@ -174,100 +126,52 @@ namespace VolkanTurkutCase.Runtime.Player
             }
         }
 
+        #endregion
+
+        #region Slot Management
+
         /// <summary>
         /// Selects a hotbar slot.
         /// </summary>
-        /// <param name="slotIndex">The slot index (0-3).</param>
         public void SelectSlot(int slotIndex)
         {
-            if (slotIndex < 0 || slotIndex >= m_MaxSlots)
-            {
-                return;
-            }
+            if (slotIndex < 0 || slotIndex >= m_MaxSlots) return;
 
             m_SelectedSlot = slotIndex;
             OnSlotSelected?.Invoke(slotIndex);
-            Debug.Log($"[PlayerInventory] Selected slot {slotIndex + 1}");
+            Debug.Log($"[PlayerInventory] Selected slot {slotIndex + 1} (Key: {m_Slots[slotIndex]?.ItemName ?? "Empty"})");
         }
 
         /// <summary>
-        /// Drops the currently selected key.
+        /// Drops the currently selected key. Slot becomes empty.
         /// </summary>
         public void DropSelectedKey()
         {
-            if (SelectedKey == null)
+            KeyData keyToDrop = SelectedKey;
+            if (keyToDrop == null)
             {
-                Debug.Log("[PlayerInventory] No key to drop in selected slot.");
+                Debug.Log("[PlayerInventory] No key in selected slot to drop.");
                 return;
             }
 
-            KeyData keyToDrop = SelectedKey;
             Vector3 dropPosition = CalculateDropPosition();
 
-            // Remove from inventory
-            m_CollectedKeys.RemoveAt(m_SelectedSlot);
+            // Clear the slot (don't shift, just set to null)
+            m_Slots[m_SelectedSlot] = null;
 
             // Spawn the key pickup prefab
             SpawnDroppedKey(keyToDrop, dropPosition);
-
-            // Adjust selected slot if needed
-            if (m_SelectedSlot >= m_CollectedKeys.Count && m_CollectedKeys.Count > 0)
-            {
-                m_SelectedSlot = m_CollectedKeys.Count - 1;
-            }
 
             OnKeyRemoved?.Invoke(keyToDrop);
             OnKeyDropped?.Invoke(keyToDrop, dropPosition);
             OnInventoryChanged?.Invoke();
 
-            Debug.Log($"[PlayerInventory] Dropped key: {keyToDrop.ItemName}");
+            Debug.Log($"[PlayerInventory] Dropped key: {keyToDrop.ItemName}. Slot {m_SelectedSlot + 1} is now empty.");
         }
 
         /// <summary>
-        /// Calculates the position to drop the key.
+        /// Adds a key to the first available slot.
         /// </summary>
-        private Vector3 CalculateDropPosition()
-        {
-            Camera cam = Camera.main;
-            if (cam != null)
-            {
-                return cam.transform.position + cam.transform.forward * m_DropDistance + Vector3.down * m_DropHeight;
-            }
-            return transform.position + transform.forward * m_DropDistance;
-        }
-
-        /// <summary>
-        /// Spawns a dropped key in the world.
-        /// </summary>
-        private void SpawnDroppedKey(KeyData keyData, Vector3 position)
-        {
-            if (m_KeyPickupPrefab == null)
-            {
-                Debug.LogWarning("[PlayerInventory] Key pickup prefab not assigned. Cannot spawn dropped key.");
-                return;
-            }
-
-            GameObject droppedKey = Instantiate(m_KeyPickupPrefab, position, Quaternion.identity);
-
-            // Set the key data on the spawned pickup
-            var keyPickup = droppedKey.GetComponent<Interactables.KeyPickup>();
-            if (keyPickup != null)
-            {
-                keyPickup.SetKeyData(keyData);
-            }
-
-            // Add some physics if there's a rigidbody
-            var rb = droppedKey.GetComponent<Rigidbody>();
-            if (rb != null)
-            {
-                rb.AddForce(Vector3.up * 2f + Camera.main.transform.forward * 3f, ForceMode.Impulse);
-            }
-        }
-
-        /// <summary>
-        /// Adds a key to the inventory.
-        /// </summary>
-        /// <param name="key">The key data to add.</param>
         public void AddKey(KeyData key)
         {
             if (key == null)
@@ -276,73 +180,67 @@ namespace VolkanTurkutCase.Runtime.Player
                 return;
             }
 
-            if (m_CollectedKeys.Count >= m_MaxSlots)
+            // Find first empty slot
+            for (int i = 0; i < m_Slots.Length; i++)
             {
-                Debug.LogWarning("[PlayerInventory] Inventory full! Cannot add more keys.");
-                return;
+                if (m_Slots[i] == null)
+                {
+                    m_Slots[i] = key;
+                    Debug.Log($"[PlayerInventory] Added key: {key.ItemName} to slot {i + 1}");
+                    OnKeyAdded?.Invoke(key);
+                    OnInventoryChanged?.Invoke();
+                    return;
+                }
             }
 
-            m_CollectedKeys.Add(key);
-            Debug.Log($"[PlayerInventory] Added key: {key.ItemName}");
-
-            OnKeyAdded?.Invoke(key);
-            OnInventoryChanged?.Invoke();
+            Debug.LogWarning("[PlayerInventory] Inventory full! Cannot add more keys.");
         }
 
         /// <summary>
         /// Checks if the inventory contains a specific key.
         /// </summary>
-        /// <param name="key">The key data to check for.</param>
-        /// <returns>True if the key is in the inventory.</returns>
         public bool HasKey(KeyData key)
         {
-            if (key == null)
+            if (key == null) return false;
+
+            for (int i = 0; i < m_Slots.Length; i++)
             {
-                return false;
+                if (m_Slots[i] != null && m_Slots[i].KeyId == key.KeyId)
+                {
+                    return true;
+                }
             }
-
-            return m_CollectedKeys.Exists(k => k.KeyId == key.KeyId);
-        }
-
-        /// <summary>
-        /// Removes a key from the inventory.
-        /// </summary>
-        /// <param name="key">The key data to remove.</param>
-        /// <returns>True if the key was removed.</returns>
-        public bool RemoveKey(KeyData key)
-        {
-            if (key == null)
-            {
-                Debug.LogError("[PlayerInventory] Cannot remove null key!");
-                return false;
-            }
-
-            var foundKey = m_CollectedKeys.Find(k => k.KeyId == key.KeyId);
-            if (foundKey != null)
-            {
-                m_CollectedKeys.Remove(foundKey);
-                Debug.Log($"[PlayerInventory] Removed key: {key.ItemName}");
-
-                OnKeyRemoved?.Invoke(key);
-                OnInventoryChanged?.Invoke();
-                return true;
-            }
-
             return false;
         }
 
         /// <summary>
-        /// Gets the key at a specific slot.
+        /// Removes a specific key from inventory.
         /// </summary>
-        /// <param name="slotIndex">The slot index.</param>
-        /// <returns>The key data, or null if slot is empty.</returns>
+        public bool RemoveKey(KeyData key)
+        {
+            if (key == null) return false;
+
+            for (int i = 0; i < m_Slots.Length; i++)
+            {
+                if (m_Slots[i] != null && m_Slots[i].KeyId == key.KeyId)
+                {
+                    m_Slots[i] = null;
+                    Debug.Log($"[PlayerInventory] Removed key: {key.ItemName} from slot {i + 1}");
+                    OnKeyRemoved?.Invoke(key);
+                    OnInventoryChanged?.Invoke();
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Gets the key at a specific slot (null if empty).
+        /// </summary>
         public KeyData GetKeyAtSlot(int slotIndex)
         {
-            if (slotIndex < 0 || slotIndex >= m_CollectedKeys.Count)
-            {
-                return null;
-            }
-            return m_CollectedKeys[slotIndex];
+            if (m_Slots == null || slotIndex < 0 || slotIndex >= m_Slots.Length) return null;
+            return m_Slots[slotIndex];
         }
 
         /// <summary>
@@ -350,9 +248,109 @@ namespace VolkanTurkutCase.Runtime.Player
         /// </summary>
         public void ClearInventory()
         {
-            m_CollectedKeys.Clear();
-            m_SelectedSlot = 0;
+            for (int i = 0; i < m_Slots.Length; i++)
+            {
+                m_Slots[i] = null;
+            }
             OnInventoryChanged?.Invoke();
+        }
+
+        #endregion
+
+        #region Drop Position
+
+        private Vector3 CalculateDropPosition()
+        {
+            Camera cam = Camera.main;
+            if (cam == null)
+            {
+                return GetDropPositionAtFeet();
+            }
+
+            Ray ray = new Ray(cam.transform.position, cam.transform.forward);
+
+            if (Physics.Raycast(ray, out RaycastHit hit, m_DropDistance))
+            {
+                if (Vector3.Dot(hit.normal, Vector3.up) > 0.7f)
+                {
+                    float distanceToPlayer = Vector3.Distance(transform.position, hit.point);
+                    if (distanceToPlayer < m_DropDistance * 1.5f)
+                    {
+                        return hit.point + Vector3.up * 0.2f;
+                    }
+                }
+                return GetDropPositionAtFeet();
+            }
+
+            Vector3 dropPoint = cam.transform.position + cam.transform.forward * m_DropDistance;
+            Ray downRay = new Ray(dropPoint + Vector3.up * 2f, Vector3.down);
+
+            if (Physics.Raycast(downRay, out RaycastHit groundHit, 10f))
+            {
+                if (Vector3.Dot(groundHit.normal, Vector3.up) > 0.7f)
+                {
+                    Vector3 toDropPoint = groundHit.point - transform.position;
+                    if (!Physics.Raycast(transform.position + Vector3.up * 0.5f, toDropPoint.normalized, toDropPoint.magnitude))
+                    {
+                        return groundHit.point + Vector3.up * 0.2f;
+                    }
+                }
+            }
+
+            return GetDropPositionAtFeet();
+        }
+
+        private Vector3 GetDropPositionAtFeet()
+        {
+            Ray downRay = new Ray(transform.position + Vector3.up * 0.5f, Vector3.down);
+            if (Physics.Raycast(downRay, out RaycastHit hit, 5f))
+            {
+                Vector3 forward = transform.forward;
+                forward.y = 0;
+                forward.Normalize();
+                return hit.point + Vector3.up * 0.2f + forward * 0.5f;
+            }
+            return transform.position + transform.forward * 0.5f;
+        }
+
+        #endregion
+
+        #region Drop Spawning
+
+        private void SpawnDroppedKey(KeyData keyData, Vector3 position)
+        {
+            if (m_KeyPickupPrefab == null)
+            {
+                Debug.LogWarning("[PlayerInventory] Key pickup prefab not assigned. Cannot spawn dropped key.");
+                return;
+            }
+
+            GameObject droppedKey = Instantiate(m_KeyPickupPrefab, position, Quaternion.Euler(270f, 0f, 0f));
+
+            var keyPickup = droppedKey.GetComponent<Interactables.KeyPickup>();
+            if (keyPickup != null)
+            {
+                keyPickup.SetKeyData(keyData);
+                keyPickup.ApplyKeyColor();
+            }
+
+            var renderer = droppedKey.GetComponentInChildren<MeshRenderer>();
+            if (renderer != null)
+            {
+                Material mat = new Material(renderer.material);
+                mat.color = keyData.KeyColor;
+                if (mat.HasProperty("_BaseColor"))
+                {
+                    mat.SetColor("_BaseColor", keyData.KeyColor);
+                }
+                renderer.material = mat;
+            }
+
+            var rb = droppedKey.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.AddForce(Vector3.up * 2f + Camera.main.transform.forward * 3f, ForceMode.Impulse);
+            }
         }
 
         #endregion

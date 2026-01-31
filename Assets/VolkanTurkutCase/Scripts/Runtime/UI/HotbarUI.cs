@@ -15,12 +15,7 @@ namespace VolkanTurkutCase.Runtime.UI
 
         [Header("References")]
         [SerializeField] private PlayerInventory m_PlayerInventory;
-
-        [Header("Slot Settings")]
         [SerializeField] private HotbarSlot[] m_Slots;
-        [SerializeField] private Color m_SelectedColor = new Color(1f, 0.9f, 0.4f, 1f);
-        [SerializeField] private Color m_NormalColor = new Color(0.3f, 0.3f, 0.3f, 0.8f);
-        [SerializeField] private Color m_EmptySlotColor = new Color(0.2f, 0.2f, 0.2f, 0.5f);
 
         #endregion
 
@@ -32,6 +27,15 @@ namespace VolkanTurkutCase.Runtime.UI
             {
                 m_PlayerInventory = PlayerInventory.Instance;
             }
+
+            // Initialize slot indices
+            for (int i = 0; i < m_Slots.Length; i++)
+            {
+                if (m_Slots[i] != null)
+                {
+                    m_Slots[i].Initialize(i);
+                }
+            }
         }
 
         private void OnEnable()
@@ -41,7 +45,7 @@ namespace VolkanTurkutCase.Runtime.UI
                 m_PlayerInventory.OnInventoryChanged += RefreshSlots;
                 m_PlayerInventory.OnSlotSelected += HandleSlotSelected;
             }
-            
+
             RefreshSlots();
         }
 
@@ -80,7 +84,7 @@ namespace VolkanTurkutCase.Runtime.UI
                 KeyData key = m_PlayerInventory.GetKeyAtSlot(i);
                 bool isSelected = i == m_PlayerInventory.SelectedSlot;
 
-                m_Slots[i].SetSlot(i, key, isSelected, m_SelectedColor, m_NormalColor, m_EmptySlotColor);
+                m_Slots[i].SetSlotData(key, isSelected);
             }
         }
 
@@ -90,83 +94,6 @@ namespace VolkanTurkutCase.Runtime.UI
         private void HandleSlotSelected(int slotIndex)
         {
             RefreshSlots();
-        }
-
-        #endregion
-    }
-
-    /// <summary>
-    /// Individual hotbar slot UI element.
-    /// </summary>
-    [System.Serializable]
-    public class HotbarSlot : MonoBehaviour
-    {
-        #region Fields
-
-        [SerializeField] private Image m_Background;
-        [SerializeField] private Image m_Icon;
-        [SerializeField] private TextMeshProUGUI m_KeyNumberText;
-        [SerializeField] private GameObject m_SelectionBorder;
-
-        #endregion
-
-        #region Methods
-
-        /// <summary>
-        /// Updates the slot display.
-        /// </summary>
-        public void SetSlot(int slotIndex, KeyData key, bool isSelected, 
-            Color selectedColor, Color normalColor, Color emptyColor)
-        {
-            // Set key number (1-4)
-            if (m_KeyNumberText != null)
-            {
-                m_KeyNumberText.text = (slotIndex + 1).ToString();
-            }
-
-            // Set selection border
-            if (m_SelectionBorder != null)
-            {
-                m_SelectionBorder.SetActive(isSelected);
-            }
-
-            // Set icon and background
-            if (key != null)
-            {
-                // Has key
-                if (m_Icon != null)
-                {
-                    m_Icon.gameObject.SetActive(true);
-                    if (key.Icon != null)
-                    {
-                        m_Icon.sprite = key.Icon;
-                        m_Icon.color = Color.white;
-                    }
-                    else
-                    {
-                        m_Icon.sprite = null;
-                        m_Icon.color = key.KeyColor;
-                    }
-                }
-
-                if (m_Background != null)
-                {
-                    m_Background.color = isSelected ? selectedColor : normalColor;
-                }
-            }
-            else
-            {
-                // Empty slot
-                if (m_Icon != null)
-                {
-                    m_Icon.gameObject.SetActive(false);
-                }
-
-                if (m_Background != null)
-                {
-                    m_Background.color = isSelected ? selectedColor : emptyColor;
-                }
-            }
         }
 
         #endregion

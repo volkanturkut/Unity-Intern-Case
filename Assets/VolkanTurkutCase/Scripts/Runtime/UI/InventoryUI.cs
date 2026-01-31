@@ -117,15 +117,19 @@ namespace VolkanTurkutCase.Runtime.UI
                 Destroy(child.gameObject);
             }
 
-            // Create items for each key
+            // Create items for each key in slots
             if (m_PlayerInventory == null)
             {
                 return;
             }
 
-            foreach (var key in m_PlayerInventory.CollectedKeys)
+            for (int i = 0; i < m_PlayerInventory.MaxSlots; i++)
             {
-                CreateKeyItem(key);
+                KeyData key = m_PlayerInventory.GetKeyAtSlot(i);
+                if (key != null)
+                {
+                    CreateKeyItem(key);
+                }
             }
         }
 
@@ -140,7 +144,7 @@ namespace VolkanTurkutCase.Runtime.UI
             }
 
             var item = Instantiate(m_KeyItemPrefab, m_KeyContainer);
-            
+
             // Try to set the icon
             var icon = item.GetComponentInChildren<Image>();
             if (icon != null && key.Icon != null)
