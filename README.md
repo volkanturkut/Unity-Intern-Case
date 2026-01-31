@@ -9,7 +9,7 @@
 | Unity Versiyonu | 6000.0.23f1 |
 | Render Pipeline | URP |
 | Case Süresi | 12 saat |
-| Tamamlanma Oranı | %100 |
+| Tamamlanma Oranı | %95 |
 
 ---
 
