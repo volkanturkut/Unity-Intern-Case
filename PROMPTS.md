@@ -4,10 +4,10 @@
 
 | Bilgi | Değer |
 |-------|-------|
-| Toplam prompt sayısı | 12 |
+| Toplam prompt sayısı | 15+ |
 | Kullanılan araçlar | Claude |
 | En çok yardım alınan konular | Mimari kararlar, Unity API kullanımı, Ludu Arts convention uyumu |
-| Tahmini LLM ile kazanılan süre | ~4 saat |
+| Tahmini LLM ile kazanılan süre | ~4-6 saat |
 
 ---
 
