@@ -233,10 +233,10 @@ Assets/
 
 | Bilgi | Değer |
 |-------|-------|
-| Ad Soyad | [Adınız] |
-| E-posta | [email@example.com] |
-| LinkedIn | [profil linki] |
-| GitHub | [github.com/username] |
+| Ad Soyad | [Volkan Turkut] |
+| E-posta | [volkan.trkt@gmail.com] |
+| LinkedIn | [linkedin.com/in/volkanturkut/] |
+| GitHub | [github.com/volkanturkut] |
 
 ---
 
