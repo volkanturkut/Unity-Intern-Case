@@ -183,9 +183,6 @@ Door  Chest  Switch  KeyPickup
 ### Bilinen Bug'lar
 1. Yok - Bilinen aktif bug bulunmamaktadır
 
-### İyileştirme Önerileri
-1. Object Pooling - Dropped key'ler için instantiate yerine pool kullanılabilir
-2. Localization - Prompt mesajları için string table desteği eklenebilir
 
 ---
 
