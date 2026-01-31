@@ -5,7 +5,7 @@
 | Bilgi | Değer |
 |-------|-------|
 | Toplam prompt sayısı | 12 |
-| Kullanılan araçlar | Claude (Antigravity AI Assistant) |
+| Kullanılan araçlar | Claude |
 | En çok yardım alınan konular | Mimari kararlar, Unity API kullanımı, Ludu Arts convention uyumu |
 | Tahmini LLM ile kazanılan süre | ~4 saat |
 
@@ -13,11 +13,11 @@
 
 ## Prompt 1: Interface vs Abstract Class Tercihi
 
-**Araç:** Claude (Antigravity)
+**Araç:** Claude 
 **Tarih/Saat:** 2026-01-31 12:00
 
 **Prompt:**
-> Unity'de bir interaction system tasarlarken IInteractable interface mi yoksa abstract class mı kullanmalıyım? Her ikisinin de avantaj ve dezavantajları nelerdir? Ayrıca InteractionDetector için raycast mı trigger-based detection mı tercih etmeliyim? Performance ve esneklik açısından trade-off'ları açıklar mısın?
+> Read all .md files in docs folder and learn. Start implementing the Interaction System now.
 
 **Alınan Cevap (Özet):**
 > Interface + Abstract class hybrid yaklaşımı önerildi:
@@ -38,8 +38,8 @@
 
 ## Prompt 2: Hold Interaction için Update vs Coroutine
 
-**Araç:** Claude (Antigravity)
-**Tarih/Saat:** 2026-01-31 12:45
+**Araç:** Claude 
+**Tarih/Saat:** 2026-01-31 13.50
 
 **Prompt:**
 > Chest gibi hold interaction gerektiren bir nesne için progress tracking implementasyonu yapıyorum. Update metodunda sürekli kontrol mü yoksa Coroutine ile async yaklaşım mı daha uygun? Delta time accumulation için edge case'ler neler olabilir?
@@ -62,8 +62,8 @@
 
 ## Prompt 3: Rotation Animation için Quaternion Kullanımı
 
-**Araç:** Claude (Antigravity)
-**Tarih/Saat:** 2026-01-31 13:30
+**Araç:** Claude 
+**Tarih/Saat:** 2026-01-31 14.10
 
 **Prompt:**
 > Door ve Chest için smooth rotation animation implementasyonu gerekiyor. Quaternion.Slerp ile Quaternion.RotateTowards arasındaki fark nedir? Pivot point door'un kenarında olması gerekiyorsa (hinge point) nasıl bir hierarchy setup yapmalıyım?
@@ -85,7 +85,7 @@
 
 ## Prompt 4: ScriptableObject ile Item Sistem Tasarımı
 
-**Araç:** Claude (Antigravity)
+**Araç:** Claude
 **Tarih/Saat:** 2026-01-31 14:15
 
 **Prompt:**
@@ -109,7 +109,7 @@
 
 ## Prompt 5: Inventory Slot Yönetimi - Array vs List
 
-**Araç:** Claude (Antigravity)
+**Araç:** Claude
 **Tarih/Saat:** 2026-01-31 15:00
 
 **Prompt:**
@@ -133,7 +133,7 @@
 
 ## Prompt 6: Event-Driven Communication Pattern
 
-**Araç:** Claude (Antigravity)
+**Araç:** Claude
 **Tarih/Saat:** 2026-01-31 15:45
 
 **Prompt:**
@@ -158,7 +158,7 @@
 
 ## Prompt 7: UI Canvas ve Cursor Lock State
 
-**Araç:** Claude (Antigravity)
+**Araç:** Claude
 **Tarih/Saat:** 2026-01-31 16:30
 
 **Prompt:**
@@ -182,7 +182,7 @@
 
 ## Prompt 8: Progress Bar Fill Amount Animation
 
-**Araç:** Claude (Antigravity)
+**Araç:** Claude
 **Tarih/Saat:** 2026-01-31 17:00
 
 **Prompt:**
@@ -206,7 +206,7 @@
 
 ## Prompt 9: Ludu Arts Convention Uyumu Kontrolü
 
-**Araç:** Claude (Antigravity)
+**Araç:** Claude 
 **Tarih/Saat:** 2026-01-31 18:00
 
 **Prompt:**
