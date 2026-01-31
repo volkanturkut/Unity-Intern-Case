@@ -49,6 +49,8 @@ namespace VolkanTurkutCase.Runtime.Interactables
         private Quaternion m_ClosedRotation;
         private Quaternion m_OpenRotation;
         private Quaternion m_TargetRotation;
+        private bool m_ShowingLockedMessage;
+        private Coroutine m_LockedMessageCoroutine;
 
         #endregion
 
@@ -73,7 +75,6 @@ namespace VolkanTurkutCase.Runtime.Interactables
             if (m_RotatingPart == null)
             {
                 m_RotatingPart = transform;
-                Debug.LogWarning($"[Door] {gameObject.name}: No Rotating Part assigned. For edge pivot, create an empty parent at the hinge point.");
             }
 
             if (m_AudioSource == null)
@@ -97,13 +98,6 @@ namespace VolkanTurkutCase.Runtime.Interactables
                 );
             }
         }
-
-        #endregion
-
-        #region Fields - Runtime
-
-        private bool m_ShowingLockedMessage;
-        private Coroutine m_LockedMessageCoroutine;
 
         #endregion
 
@@ -202,13 +196,11 @@ namespace VolkanTurkutCase.Runtime.Interactables
             {
                 PlaySound(m_OpenSound);
                 m_OnDoorOpened?.Invoke();
-                Debug.Log($"[Door] {gameObject.name} opened.");
             }
             else
             {
                 PlaySound(m_CloseSound);
                 m_OnDoorClosed?.Invoke();
-                Debug.Log($"[Door] {gameObject.name} closed.");
             }
         }
 
@@ -256,7 +248,6 @@ namespace VolkanTurkutCase.Runtime.Interactables
             m_IsLocked = false;
             PlaySound(m_UnlockSound);
             m_OnDoorUnlocked?.Invoke();
-            Debug.Log($"[Door] {gameObject.name} unlocked.");
         }
 
         /// <summary>

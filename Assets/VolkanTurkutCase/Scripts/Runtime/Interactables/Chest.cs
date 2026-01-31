@@ -242,7 +242,6 @@ namespace VolkanTurkutCase.Runtime.Interactables
             }
 
             m_OnChestOpened?.Invoke();
-            Debug.Log($"[Chest] {gameObject.name} opened!");
 
             // Reveal contents
             RevealContents();
@@ -272,7 +271,6 @@ namespace VolkanTurkutCase.Runtime.Interactables
                             if (key != null)
                             {
                                 inventory.AddKey(key);
-                                Debug.Log($"[Chest] Player received: {key.ItemName}");
                             }
                         }
                     }

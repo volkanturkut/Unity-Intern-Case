@@ -54,7 +54,7 @@ namespace VolkanTurkutCase.Runtime.Player
                     s_Instance = FindFirstObjectByType<PlayerInventory>();
                     if (s_Instance == null)
                     {
-                        Debug.LogError("[PlayerInventory] No PlayerInventory found in scene!");
+                        return null;
                     }
                 }
                 return s_Instance;
@@ -78,7 +78,6 @@ namespace VolkanTurkutCase.Runtime.Player
         {
             if (s_Instance != null && s_Instance != this)
             {
-                Debug.LogWarning("[PlayerInventory] Multiple instances detected, destroying duplicate.");
                 Destroy(gameObject);
                 return;
             }
@@ -139,7 +138,6 @@ namespace VolkanTurkutCase.Runtime.Player
 
             m_SelectedSlot = slotIndex;
             OnSlotSelected?.Invoke(slotIndex);
-            Debug.Log($"[PlayerInventory] Selected slot {slotIndex + 1} (Key: {m_Slots[slotIndex]?.ItemName ?? "Empty"})");
         }
 
         /// <summary>
@@ -150,7 +148,6 @@ namespace VolkanTurkutCase.Runtime.Player
             KeyData keyToDrop = SelectedKey;
             if (keyToDrop == null)
             {
-                Debug.Log("[PlayerInventory] No key in selected slot to drop.");
                 return;
             }
 
@@ -165,8 +162,6 @@ namespace VolkanTurkutCase.Runtime.Player
             OnKeyRemoved?.Invoke(keyToDrop);
             OnKeyDropped?.Invoke(keyToDrop, dropPosition);
             OnInventoryChanged?.Invoke();
-
-            Debug.Log($"[PlayerInventory] Dropped key: {keyToDrop.ItemName}. Slot {m_SelectedSlot + 1} is now empty.");
         }
 
         /// <summary>
@@ -176,7 +171,6 @@ namespace VolkanTurkutCase.Runtime.Player
         {
             if (key == null)
             {
-                Debug.LogError("[PlayerInventory] Cannot add null key!");
                 return;
             }
 
@@ -186,14 +180,12 @@ namespace VolkanTurkutCase.Runtime.Player
                 if (m_Slots[i] == null)
                 {
                     m_Slots[i] = key;
-                    Debug.Log($"[PlayerInventory] Added key: {key.ItemName} to slot {i + 1}");
                     OnKeyAdded?.Invoke(key);
                     OnInventoryChanged?.Invoke();
                     return;
                 }
             }
 
-            Debug.LogWarning("[PlayerInventory] Inventory full! Cannot add more keys.");
         }
 
         /// <summary>
@@ -225,7 +217,6 @@ namespace VolkanTurkutCase.Runtime.Player
                 if (m_Slots[i] != null && m_Slots[i].KeyId == key.KeyId)
                 {
                     m_Slots[i] = null;
-                    Debug.Log($"[PlayerInventory] Removed key: {key.ItemName} from slot {i + 1}");
                     OnKeyRemoved?.Invoke(key);
                     OnInventoryChanged?.Invoke();
                     return true;
@@ -321,7 +312,6 @@ namespace VolkanTurkutCase.Runtime.Player
         {
             if (m_KeyPickupPrefab == null)
             {
-                Debug.LogWarning("[PlayerInventory] Key pickup prefab not assigned. Cannot spawn dropped key.");
                 return;
             }
 

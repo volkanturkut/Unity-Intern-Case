@@ -43,10 +43,6 @@ namespace VolkanTurkutCase.Runtime.UI
             if (m_InteractionDetector == null)
             {
                 m_InteractionDetector = FindFirstObjectByType<InteractionDetector>();
-                if (m_InteractionDetector == null)
-                {
-                    Debug.LogError("[InteractionPromptUI] InteractionDetector not found!");
-                }
             }
 
             if (m_CanvasGroup == null)
@@ -191,8 +187,8 @@ namespace VolkanTurkutCase.Runtime.UI
 
             if (m_ProgressText != null)
             {
-                // Show "Hold [E]" instead of percentage
-                m_ProgressText.text = "Hold [E]";
+                // Show "Holding..." while holding
+                m_ProgressText.text = "Holding...";
             }
         }
 

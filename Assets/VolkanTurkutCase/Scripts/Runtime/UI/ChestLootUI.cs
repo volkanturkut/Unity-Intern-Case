@@ -56,7 +56,6 @@ namespace VolkanTurkutCase.Runtime.UI
         private void Awake()
         {
             Instance = this;
-            Debug.Log("[ChestLootUI] Instance set in Awake");
 
             if (m_LootPanel != null)
             {
@@ -72,7 +71,6 @@ namespace VolkanTurkutCase.Runtime.UI
             if (Instance == null)
             {
                 Instance = this;
-                Debug.Log("[ChestLootUI] Instance set in OnEnable");
             }
             SetupButtons();
         }
@@ -322,7 +320,6 @@ namespace VolkanTurkutCase.Runtime.UI
             if (inventory != null)
             {
                 inventory.AddKey(item);
-                Debug.Log($"[ChestLootUI] Collected: {item.ItemName}");
             }
 
             // Remove from list
@@ -368,7 +365,6 @@ namespace VolkanTurkutCase.Runtime.UI
             if (m_PlayerController != null)
             {
                 m_PlayerController.enabled = false;
-                Debug.Log("[ChestLootUI] Player controller disabled");
             }
         }
 
@@ -380,7 +376,6 @@ namespace VolkanTurkutCase.Runtime.UI
             if (m_PlayerController != null)
             {
                 m_PlayerController.enabled = true;
-                Debug.Log("[ChestLootUI] Player controller enabled");
             }
         }
 

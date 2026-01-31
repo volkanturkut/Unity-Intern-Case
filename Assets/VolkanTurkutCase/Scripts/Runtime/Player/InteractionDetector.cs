@@ -87,7 +87,7 @@ namespace VolkanTurkutCase.Runtime.Player
             m_Camera = Camera.main;
             if (m_Camera == null)
             {
-                Debug.LogError("[InteractionDetector] Main camera not found!");
+                m_Camera = GetComponentInParent<Camera>();
             }
 
             if (m_RaycastOrigin == null)
@@ -233,13 +233,11 @@ namespace VolkanTurkutCase.Runtime.Player
         {
             if (m_CurrentTarget == null)
             {
-                Debug.LogWarning("[InteractionDetector] No target to interact with.");
                 return;
             }
 
             if (!m_CurrentTarget.CanInteract())
             {
-                Debug.Log($"[InteractionDetector] Cannot interact: {m_CurrentTarget.GetPromptMessage()}");
                 return;
             }
 

@@ -201,12 +201,10 @@ namespace VolkanTurkutCase.Runtime.Interactables
             if (m_IsOn)
             {
                 m_OnSwitchOn?.Invoke();
-                Debug.Log($"[Switch] {gameObject.name} turned ON");
             }
             else
             {
                 m_OnSwitchOff?.Invoke();
-                Debug.Log($"[Switch] {gameObject.name} turned OFF");
             }
 
             m_OnSwitchToggled?.Invoke(m_IsOn);

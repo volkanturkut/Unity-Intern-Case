@@ -68,7 +68,6 @@ namespace VolkanTurkutCase.Runtime.Core
         {
             if (!CanInteract())
             {
-                Debug.LogWarning($"[{GetType().Name}] Cannot interact with {gameObject.name}");
                 OnInteractionFailed?.Invoke();
                 return;
             }

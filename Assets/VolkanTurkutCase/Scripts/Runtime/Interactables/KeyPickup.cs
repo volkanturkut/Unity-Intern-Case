@@ -114,7 +114,6 @@ namespace VolkanTurkutCase.Runtime.Interactables
             var inventory = PlayerInventory.Instance;
             if (inventory == null)
             {
-                Debug.LogError("[KeyPickup] PlayerInventory not found!");
                 return;
             }
 
@@ -122,7 +121,6 @@ namespace VolkanTurkutCase.Runtime.Interactables
             m_IsCollected = true;
 
             m_OnKeyPickedUp?.Invoke();
-            Debug.Log($"[KeyPickup] Collected key: {m_KeyData.ItemName}");
 
             if (m_DestroyOnPickup)
             {
