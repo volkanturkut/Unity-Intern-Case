@@ -65,6 +65,7 @@ namespace VolkanTurkutCase.Runtime.UI
                 m_InteractionDetector.OnInteractableLost += HandleInteractableLost;
                 m_InteractionDetector.OnHoldProgressChanged += HandleHoldProgress;
                 m_InteractionDetector.OnHoldCancelled += HandleHoldCancelled;
+                m_InteractionDetector.OnHoldCompleted += HandleHoldCompleted;
             }
         }
 
@@ -76,6 +77,7 @@ namespace VolkanTurkutCase.Runtime.UI
                 m_InteractionDetector.OnInteractableLost -= HandleInteractableLost;
                 m_InteractionDetector.OnHoldProgressChanged -= HandleHoldProgress;
                 m_InteractionDetector.OnHoldCancelled -= HandleHoldCancelled;
+                m_InteractionDetector.OnHoldCompleted -= HandleHoldCompleted;
             }
         }
 
@@ -94,12 +96,20 @@ namespace VolkanTurkutCase.Runtime.UI
         /// </summary>
         private void HandleInteractableDetected(IInteractable interactable)
         {
+            // Don't show UI if object can't be interacted with (e.g., opened chest)
+            if (!interactable.CanInteract())
+            {
+                Hide();
+                return;
+            }
+
             Show();
             UpdatePromptText();
 
             bool isHoldType = interactable.InteractionType == InteractionType.Hold;
-            SetProgressBarVisible(isHoldType);
-            
+            SetProgressBarVisible(false); // Start with progress bar hidden
+            SetPromptTextVisible(true);
+
             if (isHoldType)
             {
                 UpdateProgressBar(0f);
@@ -113,6 +123,7 @@ namespace VolkanTurkutCase.Runtime.UI
         {
             Hide();
             SetProgressBarVisible(false);
+            SetPromptTextVisible(true);
         }
 
         /// <summary>
@@ -120,6 +131,12 @@ namespace VolkanTurkutCase.Runtime.UI
         /// </summary>
         private void HandleHoldProgress(float progress)
         {
+            // While holding, show progress bar and hide prompt text
+            if (progress > 0)
+            {
+                SetProgressBarVisible(true);
+                SetPromptTextVisible(false);
+            }
             UpdateProgressBar(progress);
         }
 
@@ -128,7 +145,22 @@ namespace VolkanTurkutCase.Runtime.UI
         /// </summary>
         private void HandleHoldCancelled()
         {
+            // Show prompt text again, hide progress bar
+            SetProgressBarVisible(false);
+            SetPromptTextVisible(true);
             UpdateProgressBar(0f);
+        }
+
+        /// <summary>
+        /// Handles when hold interaction completes successfully.
+        /// </summary>
+        private void HandleHoldCompleted()
+        {
+            // Hide everything when hold completes
+            SetProgressBarVisible(false);
+            SetPromptTextVisible(true);
+            UpdateProgressBar(0f);
+            Hide();
         }
 
         /// <summary>
@@ -159,7 +191,8 @@ namespace VolkanTurkutCase.Runtime.UI
 
             if (m_ProgressText != null)
             {
-                m_ProgressText.text = $"{Mathf.RoundToInt(progress * 100)}%";
+                // Show "Hold [E]" instead of percentage
+                m_ProgressText.text = "Hold [E]";
             }
         }
 
@@ -171,6 +204,17 @@ namespace VolkanTurkutCase.Runtime.UI
             if (m_ProgressBarContainer != null)
             {
                 m_ProgressBarContainer.SetActive(visible);
+            }
+        }
+
+        /// <summary>
+        /// Sets the visibility of the prompt text.
+        /// </summary>
+        private void SetPromptTextVisible(bool visible)
+        {
+            if (m_PromptText != null)
+            {
+                m_PromptText.gameObject.SetActive(visible);
             }
         }
 

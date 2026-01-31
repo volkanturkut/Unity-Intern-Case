@@ -29,6 +29,9 @@ namespace VolkanTurkutCase.Runtime.UI
         [SerializeField] private float m_DefaultSize = 20f;
         [SerializeField] private float m_InteractableSize = 30f;
 
+        [Header("Settings")]
+        [SerializeField] private bool m_ChangeCrosshairOnInteractable = true;
+
         private RectTransform m_RectTransform;
 
         #endregion
@@ -85,31 +88,37 @@ namespace VolkanTurkutCase.Runtime.UI
                 return;
             }
 
+            // If crosshair changes are disabled, keep default state
+            if (!m_ChangeCrosshairOnInteractable)
+            {
+                return;
+            }
+
             var target = m_InteractionDetector.CurrentTarget;
-            
+
             if (target != null)
             {
                 // Looking at interactable
                 bool canInteract = target.CanInteract();
                 m_CrosshairImage.color = canInteract ? m_InteractableColor : m_CannotInteractColor;
-                
+
                 if (m_InteractableSprite != null)
                 {
                     m_CrosshairImage.sprite = m_InteractableSprite;
                 }
-                
+
                 SetSize(m_InteractableSize);
             }
             else
             {
                 // Default state
                 m_CrosshairImage.color = m_DefaultColor;
-                
+
                 if (m_DefaultSprite != null)
                 {
                     m_CrosshairImage.sprite = m_DefaultSprite;
                 }
-                
+
                 SetSize(m_DefaultSize);
             }
         }

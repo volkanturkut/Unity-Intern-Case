@@ -41,10 +41,10 @@ namespace VolkanTurkutCase.Runtime.Core
         #region Properties
 
         /// <inheritdoc/>
-        public InteractionType InteractionType => m_InteractionType;
+        public virtual InteractionType InteractionType => m_InteractionType;
 
         /// <inheritdoc/>
-        public float HoldDuration => m_HoldDuration;
+        public virtual float HoldDuration => m_HoldDuration;
 
         /// <summary>
         /// Gets the default prompt message.

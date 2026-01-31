@@ -52,6 +52,11 @@ namespace VolkanTurkutCase.Runtime.Player
         /// </summary>
         public event Action OnHoldCancelled;
 
+        /// <summary>
+        /// Invoked when hold interaction completes successfully.
+        /// </summary>
+        public event Action OnHoldCompleted;
+
         #endregion
 
         #region Properties
@@ -69,8 +74,8 @@ namespace VolkanTurkutCase.Runtime.Player
         /// <summary>
         /// Gets the current hold progress (0-1).
         /// </summary>
-        public float HoldProgress => m_CurrentTarget != null && m_CurrentTarget.HoldDuration > 0 
-            ? m_HoldTimer / m_CurrentTarget.HoldDuration 
+        public float HoldProgress => m_CurrentTarget != null && m_CurrentTarget.HoldDuration > 0
+            ? m_HoldTimer / m_CurrentTarget.HoldDuration
             : 0f;
 
         #endregion
@@ -105,7 +110,7 @@ namespace VolkanTurkutCase.Runtime.Player
             {
                 m_InteractAction.action.Disable();
             }
-            
+
             CancelHold();
         }
 
@@ -130,11 +135,11 @@ namespace VolkanTurkutCase.Runtime.Player
             }
 
             Ray ray = new Ray(m_RaycastOrigin.position, m_RaycastOrigin.forward);
-            
+
             if (Physics.Raycast(ray, out RaycastHit hit, m_InteractionRange, m_InteractableLayer))
             {
                 var interactable = hit.collider.GetComponent<IInteractable>();
-                
+
                 if (interactable == null)
                 {
                     interactable = hit.collider.GetComponentInParent<IInteractable>();
@@ -211,6 +216,7 @@ namespace VolkanTurkutCase.Runtime.Player
                 if (m_HoldTimer >= m_CurrentTarget.HoldDuration)
                 {
                     m_CurrentTarget.Interact();
+                    OnHoldCompleted?.Invoke();
                     ResetHold();
                 }
             }

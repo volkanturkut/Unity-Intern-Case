@@ -5,59 +5,71 @@ using VolkanTurkutCase.Runtime.Core;
 namespace VolkanTurkutCase.Runtime.Interactables
 {
     /// <summary>
-    /// Container that requires holding the interaction key to open.
+    /// Chest/Container that requires holding to open and can contain items.
+    /// Once opened, cannot be opened again.
     /// </summary>
     public class Chest : InteractableBase
     {
         #region Fields
 
-        private const float k_DefaultOpenAngle = -110f;
-        private const float k_DefaultRotationSpeed = 3f;
-
         [Header("Chest Settings")]
-        [SerializeField] private bool m_IsOpen;
-        [SerializeField] private bool m_CanReopen;
-        [SerializeField] private Transform m_LidTransform;
-        [SerializeField] private float m_OpenAngle = k_DefaultOpenAngle;
-        [SerializeField] private float m_RotationSpeed = k_DefaultRotationSpeed;
+        [SerializeField] private float m_OpenDuration = 2f;
+        [SerializeField] private bool m_IsLocked;
+        [SerializeField] private KeyData m_RequiredKey;
 
         [Header("Contents")]
-        [SerializeField] private ItemData[] m_Contents;
-        [SerializeField] private GameObject m_ContentsVisual;
+        [Tooltip("Keys to give player when opened")]
+        [SerializeField] private KeyData[] m_KeyContents;
+        [Tooltip("Items to spawn when opened")]
+        [SerializeField] private GameObject[] m_ItemPrefabs;
+        [SerializeField] private Transform m_SpawnPoint;
+
+        [Header("Lid Animation")]
+        [SerializeField] private Transform m_LidTransform;
+        [SerializeField] private Vector3 m_ClosedRotation = Vector3.zero;
+        [SerializeField] private Vector3 m_OpenRotation = new Vector3(-110f, 0f, 0f);
+        [SerializeField] private float m_LidSpeed = 3f;
+
+        [Header("Audio")]
+        [SerializeField] private AudioSource m_AudioSource;
+        [SerializeField] private AudioClip m_OpeningSound;
+        [SerializeField] private AudioClip m_OpenedSound;
+        [SerializeField] private AudioClip m_LockedSound;
 
         [Header("Messages")]
-        [SerializeField] private string m_HoldMessage = "Hold E to Open";
-        [SerializeField] private string m_OpenedMessage = "Empty";
+        [SerializeField] private string m_OpenMessage = "Hold E to Open";
+        [SerializeField] private string m_OpeningMessage = "Opening...";
+        [SerializeField] private string m_OpenedMessage = "Already Opened";
+        [SerializeField] private string m_LockedMessage = "Locked - Key Required";
 
         [Header("Events")]
         [SerializeField] private UnityEvent m_OnChestOpened;
-        [SerializeField] private UnityEvent m_OnChestClosed;
-        [SerializeField] private UnityEvent<ItemData[]> m_OnContentsRevealed;
+        [SerializeField] private UnityEvent m_OnContentsRevealed;
 
-        private bool m_HasBeenOpened;
-        private Quaternion m_ClosedRotation;
-        private Quaternion m_OpenRotation;
+        private bool m_IsOpened;
+        private bool m_IsOpening;
+        private float m_CurrentProgress;
         private Quaternion m_TargetRotation;
-        private float m_CurrentHoldProgress;
+        private bool m_ShowingLockedMessage;
 
         #endregion
 
         #region Properties
 
         /// <summary>
-        /// Gets whether the chest is currently open.
+        /// Gets whether the chest has been opened.
         /// </summary>
-        public bool IsOpen => m_IsOpen;
+        public bool IsOpened => m_IsOpened;
 
         /// <summary>
-        /// Gets whether the chest has been opened before.
+        /// Gets the interaction type (Hold).
         /// </summary>
-        public bool HasBeenOpened => m_HasBeenOpened;
+        public override InteractionType InteractionType => InteractionType.Hold;
 
         /// <summary>
-        /// Gets the contents of the chest.
+        /// Gets the hold duration.
         /// </summary>
-        public ItemData[] Contents => m_Contents;
+        public override float HoldDuration => m_OpenDuration;
 
         #endregion
 
@@ -65,30 +77,32 @@ namespace VolkanTurkutCase.Runtime.Interactables
 
         private void Awake()
         {
-            if (m_LidTransform == null)
+            if (m_AudioSource == null)
             {
-                Debug.LogWarning($"[Chest] Lid transform not assigned on {gameObject.name}");
-                m_LidTransform = transform;
+                m_AudioSource = GetComponent<AudioSource>();
             }
 
-            m_ClosedRotation = m_LidTransform.localRotation;
-            m_OpenRotation = m_ClosedRotation * Quaternion.Euler(m_OpenAngle, 0f, 0f);
-            m_TargetRotation = m_IsOpen ? m_OpenRotation : m_ClosedRotation;
-
-            if (m_ContentsVisual != null)
+            if (m_LidTransform != null)
             {
-                m_ContentsVisual.SetActive(m_IsOpen && !m_HasBeenOpened);
+                m_TargetRotation = Quaternion.Euler(m_ClosedRotation);
+                m_LidTransform.localRotation = m_TargetRotation;
+            }
+
+            if (m_SpawnPoint == null)
+            {
+                m_SpawnPoint = transform;
             }
         }
 
         private void Update()
         {
-            if (m_LidTransform.localRotation != m_TargetRotation)
+            // Animate lid
+            if (m_LidTransform != null && m_LidTransform.localRotation != m_TargetRotation)
             {
                 m_LidTransform.localRotation = Quaternion.Slerp(
                     m_LidTransform.localRotation,
                     m_TargetRotation,
-                    Time.deltaTime * m_RotationSpeed
+                    Time.deltaTime * m_LidSpeed
                 );
             }
         }
@@ -100,45 +114,100 @@ namespace VolkanTurkutCase.Runtime.Interactables
         /// <inheritdoc/>
         public override bool CanInteract()
         {
-            if (m_HasBeenOpened && !m_CanReopen)
-            {
-                return false;
-            }
-            return !m_IsOpen;
+            return !m_IsOpened;
         }
 
         /// <inheritdoc/>
         protected override void ExecuteInteraction()
         {
+            if (m_IsOpened)
+            {
+                return;
+            }
+
+            // Check for key requirement
+            if (m_IsLocked && m_RequiredKey != null)
+            {
+                var inventory = Player.PlayerInventory.Instance;
+                if (inventory == null)
+                {
+                    ShowLockedFeedback();
+                    return;
+                }
+
+                var selectedKey = inventory.SelectedKey;
+                if (selectedKey == null || selectedKey.KeyId != m_RequiredKey.KeyId)
+                {
+                    ShowLockedFeedback();
+                    return;
+                }
+
+                // Consume key if needed
+                m_IsLocked = false;
+            }
+
             OpenChest();
         }
 
         /// <inheritdoc/>
         public override void OnHoldProgress(float progress)
         {
-            m_CurrentHoldProgress = progress;
+            m_CurrentProgress = progress;
+            m_IsOpening = progress > 0;
+
+            // Play opening sound at start
+            if (progress > 0 && progress < 0.1f && m_AudioSource != null && m_OpeningSound != null)
+            {
+                if (!m_AudioSource.isPlaying)
+                {
+                    m_AudioSource.clip = m_OpeningSound;
+                    m_AudioSource.loop = true;
+                    m_AudioSource.Play();
+                }
+            }
+
+            // Lid stays closed during hold - only opens when completed
         }
 
         /// <inheritdoc/>
         public override void OnHoldCancelled()
         {
-            m_CurrentHoldProgress = 0f;
+            m_IsOpening = false;
+            m_CurrentProgress = 0f;
+
+            // Stop opening sound
+            if (m_AudioSource != null && m_AudioSource.isPlaying)
+            {
+                m_AudioSource.Stop();
+                m_AudioSource.loop = false;
+            }
+
+            // Close lid back
+            if (m_LidTransform != null)
+            {
+                m_TargetRotation = Quaternion.Euler(m_ClosedRotation);
+            }
         }
 
         /// <inheritdoc/>
         public override string GetPromptMessage()
         {
-            if (m_HasBeenOpened && !m_CanReopen)
+            if (m_ShowingLockedMessage)
+            {
+                return m_LockedMessage;
+            }
+
+            if (m_IsOpened)
             {
                 return m_OpenedMessage;
             }
 
-            if (m_IsOpen)
+            if (m_IsOpening)
             {
-                return m_OpenedMessage;
+                return m_OpeningMessage;
             }
 
-            return m_HoldMessage;
+            return m_OpenMessage;
         }
 
         #endregion
@@ -148,65 +217,111 @@ namespace VolkanTurkutCase.Runtime.Interactables
         /// <summary>
         /// Opens the chest and reveals contents.
         /// </summary>
-        public void OpenChest()
+        private void OpenChest()
         {
-            if (m_IsOpen)
+            if (m_IsOpened) return;
+
+            m_IsOpened = true;
+            m_IsOpening = false;
+
+            // Stop opening sound, play opened sound
+            if (m_AudioSource != null)
             {
-                return;
+                m_AudioSource.Stop();
+                m_AudioSource.loop = false;
+                if (m_OpenedSound != null)
+                {
+                    m_AudioSource.PlayOneShot(m_OpenedSound);
+                }
             }
 
-            m_IsOpen = true;
-            m_TargetRotation = m_OpenRotation;
-
-            if (!m_HasBeenOpened)
+            // Open lid fully
+            if (m_LidTransform != null)
             {
-                m_HasBeenOpened = true;
-                RevealContents();
+                m_TargetRotation = Quaternion.Euler(m_OpenRotation);
             }
 
             m_OnChestOpened?.Invoke();
-            Debug.Log($"[Chest] {gameObject.name} opened.");
+            Debug.Log($"[Chest] {gameObject.name} opened!");
+
+            // Reveal contents
+            RevealContents();
         }
 
         /// <summary>
-        /// Closes the chest (if reopening is allowed).
-        /// </summary>
-        public void CloseChest()
-        {
-            if (!m_IsOpen || !m_CanReopen)
-            {
-                return;
-            }
-
-            m_IsOpen = false;
-            m_TargetRotation = m_ClosedRotation;
-
-            m_OnChestClosed?.Invoke();
-            Debug.Log($"[Chest] {gameObject.name} closed.");
-        }
-
-        /// <summary>
-        /// Reveals the contents of the chest.
+        /// Spawns items and opens loot UI for keys.
         /// </summary>
         private void RevealContents()
         {
-            if (m_ContentsVisual != null)
+            // Open loot UI for key contents
+            if (m_KeyContents != null && m_KeyContents.Length > 0)
             {
-                m_ContentsVisual.SetActive(true);
-            }
-
-            if (m_Contents != null && m_Contents.Length > 0)
-            {
-                m_OnContentsRevealed?.Invoke(m_Contents);
-                
-                foreach (var item in m_Contents)
+                var lootUI = UI.ChestLootUI.Instance;
+                if (lootUI != null)
                 {
-                    if (item != null)
+                    lootUI.Open(this, m_KeyContents);
+                }
+                else
+                {
+                    // Fallback: auto-add if no loot UI exists
+                    var inventory = Player.PlayerInventory.Instance;
+                    if (inventory != null)
                     {
-                        Debug.Log($"[Chest] Contains: {item.ItemName}");
+                        foreach (var key in m_KeyContents)
+                        {
+                            if (key != null)
+                            {
+                                inventory.AddKey(key);
+                                Debug.Log($"[Chest] Player received: {key.ItemName}");
+                            }
+                        }
                     }
                 }
             }
+
+            // Spawn item prefabs (physical items in world)
+            if (m_ItemPrefabs != null)
+            {
+                float offset = 0f;
+                foreach (var prefab in m_ItemPrefabs)
+                {
+                    if (prefab != null)
+                    {
+                        Vector3 spawnPos = m_SpawnPoint.position + Vector3.up * 0.5f + m_SpawnPoint.forward * offset;
+                        var item = Instantiate(prefab, spawnPos, Quaternion.identity);
+
+                        // Add some pop-out force
+                        var rb = item.GetComponent<Rigidbody>();
+                        if (rb != null)
+                        {
+                            rb.AddForce(Vector3.up * 3f + Random.insideUnitSphere * 1f, ForceMode.Impulse);
+                        }
+
+                        offset += 0.3f;
+                    }
+                }
+            }
+
+            m_OnContentsRevealed?.Invoke();
+        }
+
+        /// <summary>
+        /// Shows locked feedback.
+        /// </summary>
+        private void ShowLockedFeedback()
+        {
+            if (m_AudioSource != null && m_LockedSound != null)
+            {
+                m_AudioSource.PlayOneShot(m_LockedSound);
+            }
+            StartCoroutine(ShowLockedMessageCoroutine());
+        }
+
+        private System.Collections.IEnumerator ShowLockedMessageCoroutine()
+        {
+            m_ShowingLockedMessage = true;
+            yield return new WaitForSeconds(2f);
+            m_ShowingLockedMessage = false;
         }
 
         #endregion
